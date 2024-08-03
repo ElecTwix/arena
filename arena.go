@@ -15,8 +15,8 @@ type Arena struct {
 
 type ArenaChunk struct {
 	Prev   *ArenaChunk
-	Used   unsafe.Pointer
-	Offset uintptr
+	Cursor unsafe.Pointer
+	Used   uintptr
 }
 
 func ArenaAlloc(chunkSize uintptr) *Arena {
@@ -39,8 +39,8 @@ func (a *Arena) allocChunk(size uintptr, arenaPtr *Arena) *ArenaChunk {
 	}
 
 	chunk := &ArenaChunk{
-		Offset: 0,
-		Used:   ptr,
+		Used:   0,
+		Cursor: ptr,
 		Prev:   nil,
 	}
 
@@ -50,20 +50,20 @@ func (a *Arena) allocChunk(size uintptr, arenaPtr *Arena) *ArenaChunk {
 }
 
 func (a *Arena) Alloc(size uintptr) unsafe.Pointer {
-	if a.ChunkSize < uintptr(a.Current.Offset)+size {
+	if a.ChunkSize < uintptr(a.Current.Used)+size {
 		arena := a.allocChunk(size, a)
-		a.Current.Used = arena.Used
+		a.Current.Cursor = arena.Cursor
 	}
 
-	a.Current.Offset += size
-	a.Current.Used = unsafe.Add(a.Current.Used, size)
-	return a.Current.Used
+	a.Current.Used += size
+	a.Current.Cursor = unsafe.Add(a.Current.Cursor, size)
+	return a.Current.Cursor
 }
 
 func (a *Arena) Free() {
 	arenaChunk := a.Current
 	for arenaChunk != nil {
-		unix.MunmapPtr(arenaChunk.Used, a.ChunkSize)
+		unix.MunmapPtr(arenaChunk.Cursor, a.ChunkSize)
 		arenaChunk = arenaChunk.Prev
 	}
 	a.Current = nil
@@ -72,14 +72,14 @@ func (a *Arena) Free() {
 func (a *Arena) Reset() {
 	arenaChunk := a.Current
 	for arenaChunk.Prev != nil {
-		arenaChunk.Offset = 0
+		arenaChunk.Used = 0
 		arenaChunk = arenaChunk.Prev
 	}
 }
 
 func (a *Arena) ResetCurrent() {
 	arenaChunk := a.Current
-	unix.MunmapPtr(arenaChunk.Used, a.ChunkSize)
+	unix.MunmapPtr(arenaChunk.Cursor, a.ChunkSize)
 }
 
 // Helper function to allocate memory

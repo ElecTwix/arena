@@ -1,7 +1,6 @@
 package arena_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/ElecTwix/arena"
@@ -45,8 +44,8 @@ func TestArenaAllocChunk(t *testing.T) {
 
 	}
 
-	if arena.Current.Offset != uintptr(4096) {
-		t.Error("Offset is not 4096 is ", arena.Current.Offset)
+	if arena.Current.Used != uintptr(4096) {
+		t.Error("Offset is not 4096 is ", arena.Current.Used)
 	}
 
 	ptr := arena.Alloc(1024)
@@ -54,7 +53,7 @@ func TestArenaAllocChunk(t *testing.T) {
 		t.Error("Failed to allocate memory")
 	}
 
-	if arena.Current.Offset != 1024 {
+	if arena.Current.Used != 1024 {
 		t.Error("Offset is not 1024")
 	}
 
@@ -72,8 +71,8 @@ func TestArenaReset(t *testing.T) {
 			t.Error("Failed to allocate memory")
 		}
 	}
-	if arena.Current.Offset != uintptr(4096) {
-		t.Error("Offset is not 4096 is ", arena.Current.Offset)
+	if arena.Current.Used != uintptr(4096) {
+		t.Error("Offset is not 4096 is ", arena.Current.Used)
 	}
 	arena.Reset()
 	if arena.Current == nil {
@@ -93,8 +92,8 @@ func TestArenaResetCurrent(t *testing.T) {
 			t.Error("Failed to allocate memory")
 		}
 	}
-	if arena.Current.Offset != uintptr(4096) {
-		t.Error("Offset is not 4096 is ", arena.Current.Offset)
+	if arena.Current.Used != uintptr(4096) {
+		t.Error("Offset is not 4096 is ", arena.Current.Used)
 	}
 	arena.ResetCurrent()
 	if arena.Current == nil {
@@ -114,8 +113,8 @@ func TestArenaFree(t *testing.T) {
 			t.Error("Failed to allocate memory")
 		}
 	}
-	if arena.Current.Offset != uintptr(4096) {
-		t.Error("Offset is not 4096 is ", arena.Current.Offset)
+	if arena.Current.Used != uintptr(4096) {
+		t.Error("Offset is not 4096 is ", arena.Current.Used)
 	}
 	arena.Free()
 	if arena.Current != nil {
@@ -150,16 +149,12 @@ func TestGetMemory(t *testing.T) {
 	}
 	val := int32(111)
 
-	fmt.Println(val)
-
 	arena.SetMemory(ptr, val)
 	if *(*int32)(ptr) != 111 {
 		t.Error("Memory is not 0x41", *(*int32)(ptr))
 	}
-	fmt.Println(ptr)
 
 	someVal := arena.GetMemory[int32](ptr)
-	fmt.Println(someVal)
 	if someVal != val {
 		t.Error("Memory is not 0x41", someVal)
 	}
